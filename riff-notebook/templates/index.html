@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Riff Notebook</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}" aria-label="Riff Notebook home">
+      <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
+      <span>RIFF <em>NOTEBOOK</em></span>
+    </a>
+    <span class="count">{{ total }} {{ 'RIFF' if total == 1 else 'RIFFS' }}</span>
+  </header>
+
+  <main>
+    {% for category, messages in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}" role="status">{{ messages }}</div>
+    {% endfor %}
+
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Your idea starts here</p>
+        <h1>Capture the riff.<br><span>Keep the spark.</span></h1>
+      </div>
+      <button class="record-button" id="recordToggle" type="button" aria-pressed="false">
+        <span class="record-dot"></span>
+        <span id="recordLabel">Start recording</span>
+      </button>
+    </section>
+
+    <form class="capture-card" id="riffForm" action="{{ url_for('create_riff') }}" method="post" enctype="multipart/form-data">
+      <input id="audioInput" type="file" name="audio" accept="audio/*,video/webm" hidden>
+
+      <div class="capture-status" id="captureStatus">
+        <div class="pulse-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <span id="timer">00:00</span>
+        <span id="statusText">Ready to record</span>
+      </div>
+
+      <div class="form-grid">
+        <label class="field title-field">
+          <span>Riff title</span>
+          <input type="text" name="title" maxlength="100" placeholder="Name this idea" required>
+        </label>
+        <label class="field">
+          <span>Tempo</span>
+          <div class="suffix-input"><input type="number" name="bpm" min="20" max="300" placeholder="120"><small>BPM</small></div>
+        </label>
+        <label class="field">
+          <span>Key</span>
+          <input type="text" name="musical_key" maxlength="20" placeholder="E minor">
+        </label>
+        <label class="field">
+          <span>Tuning</span>
+          <select name="tuning">
+            <option>Standard</option><option>Drop D</option><option>Drop C</option><option>DADGAD</option><option>Open G</option><option>Half Step Down</option><option>Custom</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Mood</span>
+          <select name="mood">
+            <option>Unsorted</option><option>Ideas</option><option>Heavy</option><option>Melodic</option><option>Groove</option><option>Acoustic</option><option>Complete</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field notes-field">
+        <span>Notes</span>
+        <textarea name="notes" maxlength="2000" rows="3" placeholder="Describe the shape, chord, or direction..."></textarea>
+      </label>
+
+      <div class="save-row">
+        <span id="saveHint">Record audio, then add the details.</span>
+        <button class="save-button" id="saveButton" type="submit" disabled>Save riff <span>→</span></button>
+      </div>
+    </form>
+
+    <section class="library">
+      <div class="library-heading">
+        <div>
+          <p class="eyebrow">The collection</p>
+          <h2>Saved riffs</h2>
+        </div>
+        <form class="filters" method="get">
+          <input type="search" name="q" value="{{ query }}" placeholder="Search riffs">
+          <select name="mood" aria-label="Filter by mood" onchange="this.form.submit()">
+            <option value="">All moods</option>
+            {% for item in moods %}<option value="{{ item }}" {{ 'selected' if item == mood else '' }}>{{ item }}</option>{% endfor %}
+          </select>
+          {% if query or mood %}<a class="clear" href="{{ url_for('index') }}">Clear</a>{% endif %}
+        </form>
+      </div>
+
+      {% if riffs %}
+      <div class="riff-grid">
+        {% for riff in riffs %}
+        <article class="riff-card">
+          <div class="riff-card-top">
+            <span class="mood-badge">{{ riff.mood }}</span>
+            <form action="{{ url_for('delete_riff', riff_id=riff.id) }}" method="post" onsubmit="return confirm('Delete this riff?')">
+              <button class="delete-button" type="submit" aria-label="Delete {{ riff.title }}">×</button>
+            </form>
+          </div>
+          <h3>{{ riff.title }}</h3>
+          <div class="riff-meta">
+            {% if riff.musical_key %}<span>{{ riff.musical_key }}</span>{% endif %}
+            {% if riff.bpm %}<span>{{ riff.bpm }} BPM</span>{% endif %}
+            <span>{{ riff.tuning }}</span>
+          </div>
+          {% if riff.notes %}<p class="riff-notes">{{ riff.notes }}</p>{% endif %}
+          <audio controls preload="metadata" src="{{ url_for('audio_file', filename=riff.audio_filename) }}"></audio>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">
+        <span>◉</span>
+        <h3>No riffs found</h3>
+        <p>{% if query or mood %}Try clearing your filters.{% else %}Record your first idea above.{% endif %}</p>
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+
+  <footer class="site-footer">
+    <p>Developed by Joshua Wimberly</p>
+    <p>Link To My GitHub Page: <a href="https://github.com/repos?q=owner%3A%40me" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+  </footer>
+</body>
+</html>
